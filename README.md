@@ -1,8 +1,11 @@
+源代码来自神光,由于不支持.vue 故修改之
+
 Scan unused module under a directory, support many module require method and custom module path resolver.
 
 supported module require:
+
 - [x] es module import
-- [x] commonjs require 
+- [x] commonjs require
 - [x] css、less、scss @import
 - [x] css、less、scss url()
 
@@ -19,29 +22,30 @@ yarn test
 use findUnusedModule api:
 
 ```javascript
-const chalk = require('chalk');
-const findUnusedModule = require('../src/index');
-const path = require('path');
+const chalk = require("chalk");
+const findUnusedModule = require("../src/index");
+const path = require("path");
 
 const { all, used, unused } = findUnusedModule({
-    cwd: process.cwd(),
-    entries: ['./demo-project/fre.js', './demo-project/suzhe2.js'],
-    includes: ['./demo-project/**/*'],
-    resolveRequirePath (curDir, requirePath) {
-        if (requirePath === 'b') {
-            return path.resolve(curDir, './lib/ssh.js');
-        }
-        return requirePath;
+  cwd: process.cwd(),
+  entries: ["./demo-project/fre.js", "./demo-project/suzhe2.js"],
+  includes: ["./demo-project/**/*"],
+  resolveRequirePath(curDir, requirePath) {
+    if (requirePath === "b") {
+      return path.resolve(curDir, "./lib/ssh.js");
     }
+    return requirePath;
+  },
 });
 
-console.log(chalk.blue('used modules:'));
+console.log(chalk.blue("used modules:"));
 console.log(used);
-console.log(chalk.yellow('unused modules:'));
+console.log(chalk.yellow("unused modules:"));
 console.log(unused);
 ```
 
 output:
+
 ```
 used modules:
 [
@@ -75,15 +79,15 @@ unused modules:
   '/xx/find-unused-module/./demo-project/suzhe.js'
 ]
 ```
+
 ## Options
 
-| option | description | default | demo |
-| :-----| ----: | :----: | :----: |
-| cwd | project directory | '' | process.cwd() |
-| entries | entry files | [] | [ './src/index.js' ] |
-| includes | all files | ['\*\*/\*', '!node_modules'] | [ './src/\*\*/*' ] |
-| resolveRequirePath | custom module path resolver | () => {} | (curDir, requirePath) => {} |
-
+| option             |                 description |           default            |            demo             |
+| :----------------- | --------------------------: | :--------------------------: | :-------------------------: |
+| cwd                |           project directory |              ''              |        process.cwd()        |
+| entries            |                 entry files |              []              |    [ './src/index.js' ]     |
+| includes           |                   all files | ['\*\*/\*', '!node_modules'] |     [ './src/\*\*/*' ]      |
+| resolveRequirePath | custom module path resolver |           () => {}           | (curDir, requirePath) => {} |
 
 ## License
 
