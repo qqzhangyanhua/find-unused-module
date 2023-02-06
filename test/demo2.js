@@ -2,19 +2,30 @@ const chalk = require("chalk");
 const findUnusedModule = require("../src/index");
 const path = require("path");
 const pkgJson = ["vue"];
+
 const { all, used, unused } = findUnusedModule({
   cwd: process.cwd(),
-  entries: ["./demo-project/index.js"],
-  includes: ["./demo-project/**/*"],
+  entries: ["./demo2/src/entry/index.js"],
+  includes: ["./demo2/src/**/*"],
   // entries: ["./demo2/src/entry/index.js"],
   // includes: ["./demo2/src/**/*"],
   resolveRequirePath(curDir, requirePath) {
-    // console.log("path======", requirePath);
     if (pkgJson.includes(requirePath)) {
       return false;
     }
-    if (requirePath === "b") {
-      return path.resolve(curDir, "./lib/ssh.js");
+    if (requirePath.startsWith("@/")) {
+      const pathStr = path.resolve(
+        `${process.cwd()}/demo2/src`,
+        requirePath.replace("@/", "./")
+      );
+      return pathStr;
+    }
+    if (requirePath.startsWith("@view")) {
+      const pathStr = path.resolve(
+        `${process.cwd()}/demo2/src`,
+        requirePath.replace("@view", "./views")
+      );
+      return pathStr;
     }
     //先判断是否包含快捷路径以@开头
     if (requirePath.includes("@")) {
