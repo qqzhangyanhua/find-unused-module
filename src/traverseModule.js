@@ -37,7 +37,7 @@ function moduleResolver(curModulePath, requirePath) {
     return "";
   }
   let flag = false;
-  if (requirePath.includes("@")) {
+  if (requirePath && requirePath.includes("@")) {
     flag = true;
   } else {
     flag = false;
@@ -67,7 +67,7 @@ function moduleResolver(curModulePath, requirePath) {
 }
 
 function completeModulePath(modulePath) {
-  const EXTS = [...JSON_EXTS, ...JS_EXTS, ...VUE_EXTS];
+  const EXTS = [...JSON_EXTS, ...JS_EXTS, ...VUE_EXTS, ...CSS_EXTS];
   if (modulePath.match(/\.[a-zA-Z]+$/)) {
     return modulePath;
   }
@@ -155,11 +155,19 @@ function traverseCssModule(curModulePath, callback) {
   const moduleFileConent = fs.readFileSync(curModulePath, {
     encoding: "utf-8",
   });
+  // console.log("cssssssssssssssssssssssssssss===", moduleFileConent);
 
   //通过ast读取css文件中的@import和url
-  const ast = postcss.parse(moduleFileConent, {
-    syntaxt: resolvePostcssSyntaxtPlugin(curModulePath),
-  });
+  // console.log("11111111111111111111111111", curModulePath);
+  let ast;
+  try {
+    ast = postcss.parse(moduleFileConent, {
+      syntaxt: resolvePostcssSyntaxtPlugin(curModulePath),
+    });
+  } catch (error) {
+    console.log("scss,css,less携带//错误路径", curModulePath);
+  }
+
   ast.walkAtRules("import", (rule) => {
     const subModulePath = moduleResolver(
       curModulePath,
@@ -191,20 +199,45 @@ function traverseJsModule(curModulePath, callback) {
     sourceType: "unambiguous",
     plugins: resolveBabelSyntaxtPlugins(curModulePath),
   });
+  console.log("ast============", ast);
+  // return;
+  traverseJsAst(ast, curModulePath, callback);
+}
+
+function traverseModule(curModulePath, callback) {
+  curModulePath = completeModulePath(curModulePath);
+
+  const moduleType = getModuleType(curModulePath);
+  if (moduleType === "vue") {
+    console.log("这里需要解析.vue文件", curModulePath);
+    traverseVueModule(curModulePath, callback);
+  }
+  if (moduleType & MODULE_TYPES.JS) {
+    console.log("这里解析js文件===", curModulePath, moduleType);
+    traverseJsModule(curModulePath, callback);
+  } else if (moduleType & MODULE_TYPES.CSS) {
+    traverseCssModule(curModulePath, callback);
+  }
+}
+function traverseJsAst(ast, curModulePath, callback) {
   traverse(ast, {
     ImportDeclaration(path) {
       //暂时先处理下@/这种路径
       const importPath = path.get("source.value").node;
+      console.log("path===============", importPath);
       const subModulePath = moduleResolver(curModulePath, importPath);
       if (!subModulePath) {
         return;
       }
-      console.log("ast===", importPath);
       callback && callback(subModulePath);
       traverseModule(subModulePath, callback);
     },
     CallExpression(path) {
-      if (path.get("callee").toString() === "require") {
+      //对语法树中的特定结点进行操作
+      if (
+        path.get("callee").toString() === "require" ||
+        path.get("callee").toString() === "import"
+      ) {
         const subModulePath = moduleResolver(
           curModulePath,
           path.get("arguments.0").toString().replace(/['"]/g, "")
@@ -218,30 +251,31 @@ function traverseJsModule(curModulePath, callback) {
     },
   });
 }
-
-function traverseModule(curModulePath, callback) {
-  //   console.log("curModulePath===", curModulePath);
-  curModulePath = completeModulePath(curModulePath);
-
-  const moduleType = getModuleType(curModulePath);
-  if (moduleType === "vue") {
-    console.log("这里需要解析.vue文件", curModulePath);
-    traverseVueModule(curModulePath);
-  }
-  if (moduleType & MODULE_TYPES.JS) {
-    console.log("moduleType===", curModulePath, moduleType);
-    traverseJsModule(curModulePath, callback);
-  } else if (moduleType & MODULE_TYPES.CSS) {
-    traverseCssModule(curModulePath, callback);
-  }
-}
-
+//解决vue文件
 function traverseVueModule(curModulePath, callback) {
-  const moduleFileContent = fs.readFileSync(curModulePath, {
+  const vueModuleFileContent = fs.readFileSync(curModulePath, {
     encoding: "utf-8",
   });
-  const ast = compiler.parseComponent(moduleFileContent);
-  console.log("ast=======", ast);
+  const VueAst = compiler.parseComponent(vueModuleFileContent);
+  const content = VueAst.script?.content;
+  //暂时先处理src的情况
+  const styleContent = VueAst.styles
+    ?.map((style) => style.src)
+    .filter((style) => style);
+  console.log("styleContent===", styleContent);
+  for (let i = 0; i < styleContent.length; i++) {
+    const subModulePath = moduleResolver(curModulePath, styleContent[i]);
+    if (subModulePath) {
+      callback && callback(subModulePath);
+      traverseModule(subModulePath, callback);
+    }
+  }
+  if (content) {
+    const ast = parser.parse(content, {
+      sourceType: "unambiguous",
+    });
+    traverseJsAst(ast, curModulePath, callback);
+  }
 }
 
 module.exports.traverseModule = traverseModule;

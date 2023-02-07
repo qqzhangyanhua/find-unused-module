@@ -4,8 +4,8 @@ import Component from "./component.js";
 import guang from "./guang";
 import "./style.css";
 import "@lib/ssh.js";
-import vue from "vue";
-import react from "react";
+// import vue from "vue";
+// import react from "react";
 
 export default {
   h,
