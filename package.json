@@ -5,7 +5,8 @@
   "main": "./src/index.js",
   "scripts": {
     "test": "node ./test/test.js",
-    "demo": "node ./test/demo2.js"
+    "demo": "node ./test/demo2.js",
+    "css": "node ./test/testcss.js"
   },
   "repository": {
     "type": "git",
@@ -27,5 +28,8 @@
     "postcss-less": "^4.0.1",
     "postcss-scss": "^3.0.5",
     "vue-template-compiler": "^2.7.14"
+  },
+  "devDependencies": {
+    "postcss-strip-inline-comments": "^0.1.5"
   }
 }

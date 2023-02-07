@@ -1,4 +1,5 @@
 const parser = require("@babel/parser");
+const stripInlineComments = require("postcss-strip-inline-comments");
 const traverse = require("@babel/traverse").default;
 const fs = require("fs");
 const { resolve, dirname, join, extname } = require("path");
@@ -151,17 +152,21 @@ function getModuleType(modulePath) {
   }
 }
 
-function traverseCssModule(curModulePath, callback) {
+async function traverseCssModule(curModulePath, callback) {
   const moduleFileConent = fs.readFileSync(curModulePath, {
     encoding: "utf-8",
   });
-  // console.log("cssssssssssssssssssssssssssss===", moduleFileConent);
-
-  //通过ast读取css文件中的@import和url
-  // console.log("11111111111111111111111111", curModulePath);
+  let stripInlineCommentsVal;
+  await postcss([stripInlineComments])
+    .process(moduleFileConent, {
+      parser: resolvePostcssSyntaxtPlugin(curModulePath),
+    })
+    .then((result) => {
+      stripInlineCommentsVal = result;
+    });
   let ast;
   try {
-    ast = postcss.parse(moduleFileConent, {
+    ast = postcss.parse(stripInlineCommentsVal.css, {
       syntaxt: resolvePostcssSyntaxtPlugin(curModulePath),
     });
   } catch (error) {
@@ -213,9 +218,10 @@ function traverseModule(curModulePath, callback) {
     traverseVueModule(curModulePath, callback);
   }
   if (moduleType & MODULE_TYPES.JS) {
-    console.log("这里解析js文件===", curModulePath, moduleType);
+    console.log("这里解析js文件", curModulePath, moduleType);
     traverseJsModule(curModulePath, callback);
   } else if (moduleType & MODULE_TYPES.CSS) {
+    console.log("这里解析css,scss,less文件", curModulePath);
     traverseCssModule(curModulePath, callback);
   }
 }
@@ -224,7 +230,6 @@ function traverseJsAst(ast, curModulePath, callback) {
     ImportDeclaration(path) {
       //暂时先处理下@/这种路径
       const importPath = path.get("source.value").node;
-      console.log("path===============", importPath);
       const subModulePath = moduleResolver(curModulePath, importPath);
       if (!subModulePath) {
         return;
