@@ -152,21 +152,20 @@ function getModuleType(modulePath) {
   }
 }
 
-async function traverseCssModule(curModulePath, callback) {
+function traverseCssModule(curModulePath, callback) {
   const moduleFileConent = fs.readFileSync(curModulePath, {
     encoding: "utf-8",
   });
-  let stripInlineCommentsVal;
-  await postcss([stripInlineComments])
-    .process(moduleFileConent, {
+  //先用插件删除注释
+  const processCssResult = (css) => {
+    return postcss([stripInlineComments]).process(css, {
       parser: resolvePostcssSyntaxtPlugin(curModulePath),
-    })
-    .then((result) => {
-      stripInlineCommentsVal = result;
-    });
+    }).css;
+  };
+  let stripInlineCommentsVal = processCssResult(moduleFileConent);
   let ast;
   try {
-    ast = postcss.parse(stripInlineCommentsVal.css, {
+    ast = postcss.parse(stripInlineCommentsVal, {
       syntaxt: resolvePostcssSyntaxtPlugin(curModulePath),
     });
   } catch (error) {
@@ -204,7 +203,7 @@ function traverseJsModule(curModulePath, callback) {
     sourceType: "unambiguous",
     plugins: resolveBabelSyntaxtPlugins(curModulePath),
   });
-  console.log("ast============", ast);
+  // console.log("ast============", ast);
   // return;
   traverseJsAst(ast, curModulePath, callback);
 }

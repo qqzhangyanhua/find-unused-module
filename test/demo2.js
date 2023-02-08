@@ -13,6 +13,12 @@ const { all, used, unused } = findUnusedModule({
     if (pkgJson.includes(requirePath)) {
       return false;
     }
+
+    if (requirePath.includes("test")) {
+      console.log("------------------", requirePath);
+
+      return false;
+    }
     if (requirePath.startsWith("@/")) {
       const pathStr = path.resolve(
         `${process.cwd()}/demo2/src`,
@@ -40,3 +46,5 @@ console.log(chalk.blue("used modules:"));
 console.log(used);
 console.log(chalk.yellow("unused modules:"));
 console.log(unused);
+
+console.log("unused==", unused.length);

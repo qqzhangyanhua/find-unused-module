@@ -30,5 +30,5 @@ const { all, used, unused } = findUnusedModule({
 
 console.log(chalk.blue("used modules:"));
 console.log(used);
-// console.log(chalk.yellow("unused modules:"));
-// console.log(unused);
+console.log(chalk.yellow("unused modules:"));
+console.log(unused);
